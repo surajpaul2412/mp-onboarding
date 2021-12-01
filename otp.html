@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" type="image/x-icon" href="https://agrevolution.in/assets/frontend/images/favicon.png">
+	<title>DeHaat - MP Onboarding</title>
+	<!-- Font Awesome -->
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+	<!-- Google Fonts -->
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap">
+	<!-- Bootstrap core CSS -->
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet">
+	<!-- Material Design Bootstrap -->
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.19.1/css/mdb.min.css" rel="stylesheet">
+	<!-- custom style -->
+	<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body class="container px-0 height-100" style="max-width: 450px;">
+	<section class="px-0">
+		<div class="px-3">
+			<div class="d-block w-100 pt-5">
+				<h4 class="font-weight-bold twxt-black">OTP की पुष्टि करें</h4>
+				<h6 class="text-grey">Sent via SMS to 9876543219</h6>
+				<form action="" class="px-5">
+					<div id="otp" class="inputs d-flex flex-row justify-content-center mt-2 mobile-otp">
+			            <input class="m-2 text-center form-control rounded first" type="text" id="first" maxlength="1" />
+			            <input class="m-2 text-center form-control rounded second" type="text" id="second" maxlength="1" />
+			            <input class="m-2 text-center form-control rounded third" type="text" id="third" maxlength="1" />
+			            <input class="m-2 text-center form-control rounded fourth" type="text" id="fourth" maxlength="1" />
+			        </div>
+			        <div class="mt-4" align="center"> <button class="btn btn-success rounded-pill verifyOtp" type="button">Send OTP</button> </div>
+			        <div class="mt-4">
+			        	<div class="text-grey font-weight-bold">Can't receive OTP yet?</div>
+			        	<a class='text-success font-weight-bold resendOtp' style="display: none;"><u>Resend Code</u></a>
+			        	<span id="timer">
+							00 : <span id="time">20</span>
+						</span>
+			        </div>
+				</form>
+			</div>
+		</div>		
+	</section>
+
+	<!-- Modal Resp['failure'] -->
+	<div class="modal" id="myModalFailure">
+	    <div class="modal-dialog modal-dialog-centered">
+		    <div class="modal-content">
+		    	<div class="row px-3 py-3">
+		    		<div class="col-7" align="left">
+		    			OTP verification failed.
+		    		</div>
+		    		<div class="col-5" align="right">
+		    			<a  data-dismiss="modal" class="text-black font-weight-bold"><u>Retry</u></a>
+		    		</div>
+		    	</div>
+		    </div>
+	    </div>
+	</div>
+
+	<!-- JQuery -->
+	<script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<!-- Bootstrap tooltips -->
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.4/umd/popper.min.js"></script>
+	<!-- Bootstrap core JavaScript -->
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/js/bootstrap.min.js"></script>
+	<!-- MDB core JavaScript -->
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.19.1/js/mdb.min.js"></script>
+	<script>
+		// OTP input[num] validator
+		document.addEventListener("DOMContentLoaded", function (event) {
+		  function OTPInput() {
+		    const inputs = document.querySelectorAll("#otp > *[id]");
+		    for (let i = 0; i < inputs.length; i++) {
+		      inputs[i].addEventListener("keydown", function (event) {
+		        if (event.key === "Backspace") {
+		          inputs[i].value = "";
+		          if (i !== 0) inputs[i - 1].focus();
+		        } else {
+		          if(i === inputs.length - 1 && inputs[i].value !== ""){
+		            return true;
+		          } else if (event.keyCode > 47 && event.keyCode < 58){
+		            inputs[i].value = event.key;
+		            if (i !== inputs.length - 1) inputs[i + 1].focus();
+		            event.preventDefault();
+		          } else if (event.keyCode > 64 && event.keyCode < 91) {
+		            inputs[i].value = String.fromCharCode(event.keyCode);
+		            if (i !== inputs.length - 1) inputs[i + 1].focus();
+		            event.preventDefault();
+		          }
+		        }
+		      });
+		    }
+		  }
+		  OTPInput();
+		});
+
+		// Send OTP
+		var link = window.location.href.split("?")[1];
+		if(link === undefined){
+			window.location.replace("index.html");
+		} else{
+			var linkSplit = link.split("&");
+
+			// Getting params
+			var name, phone, pincode, qr_codeArray = [];
+			$.each(linkSplit, function (key, val) {
+		        if(key === 0){
+		        	phone = val.split("phone=")[1];
+		        }
+		    });
+
+		    $("#mobile").text(phone);
+
+			if(phone === undefined){
+				window.location.replace("index.html");
+			} else{
+				// Send OTP
+				let personPhone = { "data":{"phone_number": phone,"send_otp_on_non_prod":false} }
+		        $.ajax({
+		            url: 'https://core.api.agrevolution.in/auth/otp?app_code=dehaat_farmer',
+		            type: 'post',
+		            dataType: 'json',
+		            contentType: 'application/json',
+		            data: JSON.stringify(personPhone)
+			    });
+			}
+		}
+
+		// Resend OTP CountDown
+		var counter = 60;
+		var interval = setInterval(function() {
+		    counter--;
+		    // Display 'counter' wherever you want to display it.
+		    if (counter <= 0) {
+		     	clearInterval(interval);
+		     	$('#timer').text("");
+		      	$('.resendOtp').css('display','block');
+		        return;
+		    } else{
+		    	$('#time').text(counter);
+		    }
+		}, 1000);
+
+		// Resend OTP
+		$(".resendOtp").click(function(){
+			let personPhone = { "data":{"phone_number": phone,"send_otp_on_non_prod":false} }
+	        $.ajax({
+	            url: 'https://core.api.agrevolution.in/auth/otp?app_code=dehaat_farmer',
+	            type: 'post',
+	            dataType: 'json',
+	            contentType: 'application/json',
+	            success: function (data){
+		      		$('.resendOtp').css('display','none');		      		
+					var counter = 60;
+					var interval = setInterval(function() {
+					    counter--;
+					    // Display 'counter' wherever you want to display it.
+					    if (counter <= 0) {
+					     	clearInterval(interval);
+					     	$('#timer').text("");
+					      	$('.resendOtp').css('display','block');  
+					        return;
+					    } else{
+					    	$('#time').text(counter);
+					      	$('#timer').text("00 : " + counter);
+					    }
+					}, 1000);
+				},
+				error: function(data){
+					alert("Failed to resend OTP ! Please check your Mobile number.");
+				},
+	            data: JSON.stringify(personPhone)
+		    });
+		});
+
+		// Verify OTP
+	    $(".verifyOtp").click(function () {
+			let personOtp = { "data":{"phone_number": phone,"otp":$('.first').val()+$('.second').val()+$('.third').val()+$('.fourth').val()} }
+	        $.ajax({
+	            url: 'https://core.api.agrevolution.in/auth/login?app_code=dehaat_farmer',
+	            type: 'post',
+	            dataType: 'json',
+	            contentType: 'application/json',
+	            data: JSON.stringify(personOtp),
+	            success: function (data) {
+	            	window.location.replace("info.html?phone="+phone+"");
+	            },
+	            error: function(data, errorThrown) {
+	            	$('#myModalFailure').modal('show');
+			    }
+	        });
+	    });
+	</script>
+</body>
+</html>
